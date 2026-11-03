@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spellbound 单词冒险 · 四级版</title>
+<style>
+:root{--purple:#7a6396;--purple-dark:#5d4a75;--bg:#f7f0e6;--card:#fff;--text:#4a4035;--green:#8fbc8f;--red:#cd5c5c;--gold:#d4a373}
+*{box-sizing:border-box;margin:0;padding:0;font-family:"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text)}
+body{background:var(--bg);padding-bottom:60px;background-image:radial-gradient(#d4c5b3 1px,transparent 1px);background-size:20px 20px}
+.topbar{background:var(--purple);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;color:#fff;position:sticky;top:0;z-index:100;border-bottom:4px solid var(--purple-dark)}
+.topbar span{color:#fff;font-weight:bold}
+.deco{position:fixed;pointer-events:none;opacity:.12;font-size:80px;z-index:0}
+.deco.tl{top:60px;left:10px}.deco.tr{top:60px;right:10px}.deco.bl{bottom:80px;left:10px}.deco.br{bottom:80px;right:10px}
+.page{display:none;padding:12px;position:relative;z-index:1}
+.page.active{display:block}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 4px 12px rgba(122,99,150,.08);border:2px solid #e8dcc8;position:relative}
+.btn{background:var(--purple);color:#fff;border:none;padding:12px 16px;border-radius:12px;font-size:15px;cursor:pointer;width:100%;margin:6px 0;font-weight:bold}
+.btn:active{transform:scale(.98)}
+.btn-alt{background:#e8dcc8;color:var(--text)}
+.opt{background:#faf6f0;border:2px solid #e8dcc8;padding:14px;border-radius:12px;margin:6px 0;cursor:pointer;font-size:16px;text-align:center;transition:.2s}
+.opt:active{transform:scale(.97)}
+.opt.correct{background:#d4edda;border-color:var(--green);color:#155724}
+.opt.wrong{background:#f8d7da;border-color:var(--red);color:#721c24}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sentence-blank{font-size:18px;line-height:2;margin:12px 0;padding:12px;background:#faf6f0;border-radius:12px;border-left:4px solid var(--purple)}
+.sentence-blank .blank{display:inline-block;min-width:90px;border-bottom:3px dashed var(--purple);color:var(--purple);font-weight:bold;text-align:center;padding:0 6px}
+.story-bar{background:linear-gradient(135deg,#5d4a75,#7a6396);color:#fff;padding:16px;border-radius:16px;margin-bottom:12px;text-align:center;position:relative;overflow:hidden}
+.story-bar::before{content:"🌲";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:32px;opacity:.3}
+.story-bar::after{content:"🍄";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:32px;opacity:.3}
+.story-text{color:#fff;font-size:14px;margin-top:8px;background:rgba(255,255,255,.15);padding:8px;border-radius:8px}
+.lvl-btn{display:block;width:100%;padding:14px;margin:8px 0;background:#fff;border:2px solid #e8dcc8;border-radius:12px;cursor:pointer;text-align:left;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.lvl-btn:active{background:#faf6f0}
+.lvl-btn.cleared{border-color:var(--green);background:#f0f7f0}
+.lvl-btn.locked{opacity:.4;pointer-events:none;background:#f0f0f0}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e8dcc8;display:flex;justify-content:space-around;padding:8px;z-index:100}
+.nav div{flex:1;text-align:center;padding:6px;cursor:pointer;font-size:12px}
+.nav .active{color:var(--purple);font-weight:bold}
+.heart{color:var(--red);font-size:18px}
+.coin{background:var(--gold);color:#fff;padding:2px 8px;border-radius:10px;font-size:12px}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal.active{display:flex}
+.modal-card{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px;text-align:center}
+.spell-prefix{font-size:26px;font-weight:bold;color:var(--purple);letter-spacing:2px}
+.spell-box{display:inline-block;width:34px;height:38px;border:2px dashed #999;margin:2px;text-align:center;line-height:34px;font-size:19px;font-weight:bold;border-radius:6px;vertical-align:middle}
+.spell-box.filled{background:#d4edda;border-color:var(--green)}
+.spell-box.wrong{background:#f8d7da;border-color:var(--red)}
+.letter-btn{display:inline-block;width:34px;height:34px;line-height:30px;text-align:center;border:2px solid #e8dcc8;border-radius:8px;margin:3px;cursor:pointer;font-weight:bold;background:#faf6f0;font-size:15px}
+.letter-btn:active{background:#e8dcc8}
+.letter-btn.used{opacity:.3;pointer-events:none}
+.music-btn{position:fixed;top:14px;right:60px;z-index:101;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px;color:#fff}
+.music-btn.playing{background:rgba(255,255,255,.4)}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.chapter-nav{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.chapter-nav .cnav{flex:1;min-width:90px;padding:8px;text-align:center;background:#e8dcc8;border-radius:10px;cursor:pointer;font-size:13px}
+.chapter-nav .cnav.active{background:var(--purple);color:#fff}
+</style>
+</head>
+<body>
+
+<button class="music-btn" id="musicBtn">🎵</button>
+<div class="toast" id="toast"></div>
+<div class="deco tl">🌲</div><div class="deco tr">🌿</div><div class="deco bl">🍄</div><div class="deco br">🦌</div>
+
+<div class="topbar" id="topbar">
+  <span id="top-title">🗺️ 地图</span>
+  <span><span class="heart">♥</span><span id="hp">3</span> &nbsp; <span class="coin">🪙 <span id="coins">0</span></span></span>
+</div>
+
+<!-- 地图 -->
+<div class="page active" id="map">
+  <div class="story-bar">
+    <div style="font-size:20px" id="map-chapter-title">📖 第1章：迷雾森林</div>
+    <div class="story-text" id="map-story">勇者踏入森林，前方充满未知单词...（三个板块共享进度）</div>
+  </div>
+  <div class="card">
+    <div style="font-weight:bold;margin-bottom:8px">① 选择章节（共 <span id="total-chapters">0</span> 章）</div>
+    <div class="chapter-nav" id="chapter-nav"></div>
+  </div>
+  <div class="card">
+    <div style="font-weight:bold;margin-bottom:8px">② 选择课时（已解锁到第 <span id="unlock-info" style="color:var(--purple)">1</span> 课）</div>
+    <div id="map-modules"></div>
+  </div>
+</div>
+
+<!-- 故事 -->
+<div class="page" id="story">
+  <div class="story-bar">
+    <div style="font-size:18px" id="story-title">剧情</div>
+    <div class="story-text" id="story-text">...</div>
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <button class="btn" onclick="startQuiz()">▶ 开始挑战</button>
+    <button class="btn btn-alt" onclick="switchPage('map')">返回地图</button>
+  </div>
+</div>
+
+<!-- 答题 -->
+<div class="page" id="quiz">
+  <div class="card">
+    <div id="quiz-header" style="font-weight:bold;margin-bottom:8px"></div>
+    <div id="quiz-area"></div>
+    <div style="text-align:center;margin-top:10px"><button class="btn-alt" style="padding:8px 16px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer" onclick="showDetail(state.quizWords[state.currentQ])">📖 查看单词详情</button></div>
+  </div>
+</div>
+
+<!-- 结果 -->
+<div class="page" id="result">
+  <div class="card" style="text-align:center;padding:30px">
+    <div id="result-stars" style="font-size:40px;margin:10px 0">★★★</div>
+    <div id="result-title" style="font-size:22px;font-weight:bold"></div>
+    <div id="result-desc" style="margin:10px 0;color:#666"></div>
+    <button class="btn" onclick="backToMap()">返回地图</button>
+    <button class="btn btn-alt" onclick="retryLevel()">再玩一次</button>
+  </div>
+</div>
+
+<!-- 单词 -->
+<div class="page" id="words">
+  <div class="card">
+    <div style="margin-bottom:8px">
+      <button class="opt active" style="padding:6px;font-size:13px;display:inline-block;width:auto;margin:2px" onclick="filterWords('all',this)">全部</button>
+      <button class="opt" style="padding:6px;font-size:13px;display:inline-block;width:auto;margin:2px" onclick="filterWords('mastered',this)">已掌握</button>
+      <button class="opt" style="padding:6px;font-size:13px;display:inline-block;width:auto;margin:2px" onclick="filterWords('review',this)">需复习</button>
+      <button class="opt" style="padding:6px;font-size:13px;display:inline-block;width:auto;margin:2px" onclick="filterWords('learning',this)">学习中</button>
+    </div>
+    <div id="word-list"></div>
+  </div>
+</div>
+
+<!-- 我的 -->
+<div class="page" id="me">
+  <div class="card" style="text-align:center">
+    <div style="font-size:40px">🦊</div>
+    <div>已掌握：<b id="me-mastered">0</b> / <span id="me-total">0</span> 词</div>
+    <div>金币：🪙 <b id="me-coins">0</b></div>
+    <div>学习进度：第 <b id="me-lesson">1</b> 课（全局）</div>
+    <div style="margin-top:10px"><b>需复习：</b><div id="review-list"></div></div>
+    <button class="btn btn-alt" style="margin-top:10px" onclick="if(confirm('确定清空所有进度？')){localStorage.clear();location.reload()}">清空存档</button>
+  </div>
+</div>
+
+<!-- 模态 -->
+<div class="modal" id="word-modal">
+  <div class="modal-card">
+    <div id="modal-art" style="font-size:48px">🦌</div>
+    <div id="modal-word" style="font-size:24px;font-weight:bold;color:var(--purple)"></div>
+    <div id="modal-phon" style="color:#888"></div>
+    <div id="modal-pos" style="font-size:13px"></div>
+    <div id="modal-meaning" style="margin:8px 0"></div>
+    <div id="modal-example" style="font-size:13px;color:#555;background:#faf6f0;padding:8px;border-radius:8px;margin:8px 0"></div>
+    <button class="btn" onclick="playModalWord()">🔊 发音</button>
+    <button class="btn btn-alt" onclick="closeModal()">关闭</button>
+  </div>
+</div>
+
+<div class="nav">
+  <div id="nav-map" class="active" onclick="switchPage('map')">🗺️<br>地图</div>
+  <div id="nav-words" onclick="switchPage('words')">📖<br>单词</div>
+  <div id="nav-me" onclick="switchPage('me')">👤<br>我的</div>
+</div>
+
+<script>
+var WORDS=[
+{ch:1,word:"discover",phon:"/dɪˈskʌvər/",pos:"v.",meaning:"发现，揭露",sentence:"We need to ______ a new path through the forest.",translation:"我们需要在森林里______一条新路。",options:["discover","deliver","decorate","destroy"],art:"🔍"},
+{ch:1,word:"deliver",phon:"/dɪˈlɪvər/",pos:"v.",meaning:"递送，发表",sentence:"The postman will ______ the letter tomorrow.",translation:"邮递员明天会______这封信。",options:["deliver","discover","develop","delete"],art:"📦"},
+{ch:1,word:"decorate",phon:"/ˈdekəreɪt/",pos:"v.",meaning:"装饰",sentence:"We will ______ the room with flowers.",translation:"我们会用花来______房间。",options:["decorate","discover","damage","deliver"],art:"🎀"},
+{ch:1,word:"destroy",phon:"/dɪˈstrɔɪ/",pos:"v.",meaning:"破坏，摧毁",sentence:"Don't ______ the old bridge, it is historic.",translation:"不要______那座古桥，它有历史价值。",options:["destroy","discover","deliver","design"],art:"💥"},
+{ch:1,word:"frightened",phon:"/ˈfraɪtnd/",pos:"adj.",meaning:"害怕的，受惊的",sentence:"The little deer was ______ by the loud noise.",translation:"小鹿被巨大的声响______了。",options:["frightened","friendly","free","fresh"],art:"🦌"},
+{ch:1,word:"friendly",phon:"/ˈfrendli/",pos:"adj.",meaning:"友好的",sentence:"Our new neighbor is very ______.",translation:"我们的新邻居非常______。",options:["friendly","frightened","formal","free"],art:"🤝"},
+{ch:1,word:"freeze",phon:"/friːz/",pos:"v.",meaning:"冻结，结冰",sentence:"Water will ______ when it is cold enough.",translation:"天够冷时水会______。",options:["freeze","frighten","flow","fly"],art:"❄️"},
+{ch:1,word:"forest",phon:"/ˈfɒrɪst/",pos:"n.",meaning:"森林",sentence:"Many animals live in this ______.",translation:"许多动物住在这片______里。",options:["forest","field","floor","fort"],art:"🌲"},
+{ch:1,word:"brave",phon:"/breɪv/",pos:"adj.",meaning:"勇敢的",sentence:"The ______ hero saved the village.",translation:"那位______的英雄拯救了村庄。",options:["brave","bright","brief","broad"],art:"⚔️"},
+{ch:1,word:"bright",phon:"/braɪt/",pos:"adj.",meaning:"明亮的，聪明的",sentence:"The sun is very ______ today.",translation:"今天的太阳非常______。",options:["bright","brave","blind","brief"],art:"✨"},
+{ch:1,word:"hidden",phon:"/ˈhɪdn/",pos:"adj.",meaning:"隐藏的",sentence:"We found a ______ treasure in the cave.",translation:"我们在洞里找到了______的宝藏。",options:["hidden","hard","heavy","high"],art:"👁️"},
+{ch:1,word:"path",phon:"/pɑːθ/",pos:"n.",meaning:"小路，路径",sentence:"Follow this ______ to the village.",translation:"沿着这条______走到村子。",options:["path","pass","past","park"],art:"🛤️"},
+{ch:1,word:"gate",phon:"/ɡeɪt/",pos:"n.",meaning:"大门",sentence:"Please close the ______ after you enter.",translation:"进来后请关上______。",options:["gate","game","garden","gift"],art:"🚪"},
+{ch:1,word:"venture",phon:"/ˈventʃər/",pos:"v.",meaning:"冒险，大胆前往",sentence:"We will ______ into the deep forest.",translation:"我们要______深入森林。",options:["venture","visit","voice","view"],art:"🗡️"},
+{ch:1,word:"shadow",phon:"/ˈʃædəʊ/",pos:"n.",meaning:"影子，阴影",sentence:"The tree's ______ is very long at sunset.",translation:"日落时树的______很长。",options:["shadow","shape","share","sharp"],art:"🌑"},
+{ch:1,word:"light",phon:"/laɪt/",pos:"n./adj.",meaning:"光；轻的",sentence:"The ______ in the cave is very weak.",translation:"洞里的______非常微弱。",options:["light","list","line","life"],art:"💡"},
+{ch:1,word:"creature",phon:"/ˈkriːtʃər/",pos:"n.",meaning:"生物，动物",sentence:"A small ______ ran across the path.",translation:"一个小______跑过了小路。",options:["creature","create","credit","culture"],art:"🐾"},
+{ch:1,word:"whisper",phon:"/ˈwɪspər/",pos:"v./n.",meaning:"低语，耳语",sentence:"She began to ______ a secret to me.",translation:"她开始对我______一个秘密。",options:["whisper","whistle","wave","wait"],art:"🗣️"},
+{ch:1,word:"courage",phon:"/ˈkʌrɪdʒ/",pos:"n.",meaning:"勇气",sentence:"It takes ______ to face the dark.",translation:"面对黑暗需要______。",options:["courage","college","culture","course"],art:"🦁"},
+{ch:1,word:"ancient",phon:"/ˈeɪnʃənt/",pos:"adj.",meaning:"古老的，古代的",sentence:"This is an ______ tree, over 500 years old.",translation:"这是一棵______树，已有500多年。",options:["ancient","angry","anxious","absent"],art:"🏛️"},
+{ch:1,word:"mist",phon:"/mɪst/",pos:"n.",meaning:"薄雾",sentence:"A thick ______ covered the whole forest.",translation:"浓______笼罩了整片森林。",options:["mist","miss","most","must"],art:"🌫️"},
+{ch:1,word:"trap",phon:"/træp/",pos:"n./v.",meaning:"陷阱；困住",sentence:"The hunter set a ______ for the wolf.",translation:"猎人为狼设了一个______。",options:["trap","trip","true","try"],art:"🕳️"},
+{ch:1,word:"rescue",phon:"/ˈreskjuː/",pos:"v./n.",meaning:"营救，救援",sentence:"They came to ______ the lost child.",translation:"他们来______那个迷路的孩子。",options:["rescue","research","return","review"],art:"🚑"},
+{ch:1,word:"silent",phon:"/ˈsaɪlənt/",pos:"adj.",meaning:"安静的，沉默的",sentence:"The forest was completely ______ at night.",translation:"夜晚的森林完全______。",options:["silent","simple","single","similar"],art:"🤫"},
+{ch:1,word:"torch",phon:"/tɔːrtʃ/",pos:"n.",meaning:"火炬，手电筒",sentence:"He carried a ______ to see in the dark.",translation:"他举着______在黑暗中照明。",options:["torch","touch","teach","taste"],art:"🔦"},
+{ch:1,word:"guard",phon:"/ɡɑːrd/",pos:"v./n.",meaning:"守卫；保卫",sentence:"The soldier will ______ the gate.",translation:"士兵会______大门。",options:["guard","guide","guess","guest"],art:"💂"},
+{ch:1,word:"vanish",phon:"/ˈvænɪʃ/",pos:"v.",meaning:"消失，突然不见",sentence:"The fog began to ______ at noon.",translation:"中午时分雾开始______。",options:["vanish","visit","voice","various"],art:"💨"},
+{ch:1,word:"journey",phon:"/ˈdʒɜːrni/",pos:"n.",meaning:"旅程，行程",sentence:"The ______ to the castle is long.",translation:"去城堡的______很漫长。",options:["journey","join","joy","judge"],art:"🎒"},
+{ch:1,word:"magic",phon:"/ˈmædʒɪk/",pos:"n./adj.",meaning:"魔法；神奇的",sentence:"The old book is full of ______.",translation:"这本古书里满是______。",options:["magic","major","manage","matter"],art:"✨"},
+{ch:1,word:"spell",phon:"/spel/",pos:"n./v.",meaning:"咒语；拼写",sentence:"Cast a ______ to open the door.",translation:"念一道______把门打开。",options:["spell","speak","spend","speed"],art:"📜"},
+{ch:1,word:"legend",phon:"/ˈledʒənd/",pos:"n.",meaning:"传说，传奇",sentence:"There is an old ______ about this forest.",translation:"关于这片森林有个古老的______。",options:["legend","league","legal","level"],art:"📜"},
+{ch:2,word:"ability",phon:"/əˈbɪləti/",pos:"n.",meaning:"能力，才能",sentence:"She has the ______ to solve hard problems.",translation:"她有______解决难题。",options:["ability","activity","advantage","advice"],art:"🧠"},
+{ch:2,word:"analyze",phon:"/ˈænəlaɪz/",pos:"v.",meaning:"分析",sentence:"We must ______ the data carefully.",translation:"我们必须仔细______这些数据。",options:["analyze","announce","answer","argue"],art:"🔬"},
+{ch:2,word:"theory",phon:"/ˈθiːəri/",pos:"n.",meaning:"理论，学说",sentence:"His ______ explains the strange light.",translation:"他的______解释了那道奇怪的光。",options:["theory","think","there","these"],art:"📐"},
+{ch:2,word:"research",phon:"/rɪˈsɜːrtʃ/",pos:"n./v.",meaning:"研究，调查",sentence:"They do ______ on plant growth.",translation:"他们______植物生长。",options:["research","rescue","return","review"],art:"🔍"},
+{ch:2,word:"knowledge",phon:"/ˈnɑːlɪdʒ/",pos:"n.",meaning:"知识，学问",sentence:"Reading brings us ______.",translation:"阅读给我们带来______。",options:["knowledge","knock","knee","knife"],art:"📚"},
+{ch:2,word:"educate",phon:"/ˈedʒukeɪt/",pos:"v.",meaning:"教育，培养",sentence:"Schools ______ children for the future.",translation:"学校为孩子______未来。",options:["educate","edit","effect","elect"],art:"🏫"},
+{ch:2,word:"method",phon:"/ˈmeθəd/",pos:"n.",meaning:"方法，办法",sentence:"This is a good ______ to learn words.",translation:"这是个学单词的好______。",options:["method","middle","month","mother"],art:"🛠️"},
+{ch:2,word:"concept",phon:"/ˈkɑːnsept/",pos:"n.",meaning:"概念，观念",sentence:"The ______ is hard to understand.",translation:"这个______很难理解。",options:["concept","concert","correct","count"],art:"💡"},
+{ch:2,word:"evidence",phon:"/ˈevɪdəns/",pos:"n.",meaning:"证据，迹象",sentence:"We need more ______ to prove it.",translation:"我们需要更多______来证明。",options:["evidence","event","every","even"],art:"📄"},
+{ch:2,word:"conclude",phon:"/kənˈkluːd/",pos:"v.",meaning:"得出结论，结束",sentence:"We can ______ that he is right.",translation:"我们可以______他是对的。",options:["conclude","correct","connect","consider"],art:"🏁"},
+{ch:2,word:"focus",phon:"/ˈfoʊkəs/",pos:"v./n.",meaning:"集中；焦点",sentence:"Please ______ on your study.",translation:"请______学习。",options:["focus","follow","force","forget"],art:"🎯"},
+{ch:2,word:"effort",phon:"/ˈefərt/",pos:"n.",meaning:"努力，尽力",sentence:"It takes ______ to learn English.",translation:"学英语需要______。",options:["effort","effect","either","else"],art:"💪"},
+{ch:2,word:"improve",phon:"/ɪmˈpruːv/",pos:"v.",meaning:"改善，提高",sentence:"She wants to ______ her English.",translation:"她想______英语。",options:["improve","import","impress","include"],art:"📈"},
+{ch:2,word:"review",phon:"/rɪˈvjuː/",pos:"v./n.",meaning:"复习；评论",sentence:"Let's ______ the lesson together.",translation:"我们一起______这课吧。",options:["review","return","reverse","reveal"],art:"📝"},
+{ch:2,word:"practice",phon:"/ˈpræktɪs/",pos:"n./v.",meaning:"练习，实践",sentence:"______ makes perfect.",translation:"______出真知。",options:["practice","praise","press","price"],art:"✍️"},
+{ch:2,word:"progress",phon:"/ˈprɑːɡres/",pos:"n./v.",meaning:"进步，进展",sentence:"He has made great ______ this year.",translation:"他今年______很大。",options:["progress","project","promise","protect"],art:"📊"},
+{ch:2,word:"detail",phon:"/dɪˈteɪl/",pos:"n.",meaning:"细节，详情",sentence:"Pay attention to every ______.",translation:"注意每个______。",options:["detail","develop","device","divide"],art:"🔎"},
+{ch:2,word:"summarize",phon:"/ˈsʌməraɪz/",pos:"v.",meaning:"总结，概括",sentence:"Can you ______ the story?",translation:"你能______这个故事吗？",options:["summarize","support","suppose","surprise"],art:"📋"},
+{ch:2,word:"logic",phon:"/ˈlɑːdʒɪk/",pos:"n.",meaning:"逻辑，推理",sentence:"His argument lacks ______.",translation:"他的论点缺乏______。",options:["logic","long","look","loss"],art:"🧩"},
+{ch:2,word:"insight",phon:"/ˈɪnsaɪt/",pos:"n.",meaning:"洞察力，见解",sentence:"She has a deep ______ into the problem.",translation:"她对问题有深刻的______。",options:["insight","inside","instead","install"],art:"👁️"},
+{ch:2,word:"degree",phon:"/dɪˈɡriː/",pos:"n.",meaning:"学位；程度",sentence:"He got a ______ in physics.",translation:"他拿到了物理______。",options:["degree","develop","device","decide"],art:"🎓"},
+{ch:2,word:"scholar",phon:"/ˈskɑːlər/",pos:"n.",meaning:"学者，学生",sentence:"The ______ wrote many books.",translation:"那位______写了很多书。",options:["scholar","school","science","screen"],art:"👨‍🎓"},
+{ch:2,word:"subject",phon:"/ˈsʌbdʒɪkt/",pos:"n.",meaning:"科目，主题",sentence:"Math is my favorite ______.",translation:"数学是我最喜欢的______。",options:["subject","suggest","suffer","supply"],art:"📘"},
+{ch:2,word:"textbook",phon:"/ˈtekstbʊk/",pos:"n.",meaning:"教科书，课本",sentence:"Open your ______ to page 10.",translation:"把______翻到第10页。",options:["textbook","text","test","than"],art:"📕"},
+{ch:2,word:"graduate",phon:"/ˈɡrædʒueɪt/",pos:"v./n.",meaning:"毕业；毕业生",sentence:"She will ______ next year.",translation:"她明年______。",options:["graduate","group","ground","guide"],art:"🎓"},
+{ch:2,word:"lecture",phon:"/ˈlektʃər/",pos:"n./v.",meaning:"讲座，讲课",sentence:"The professor gave a long ______.",translation:"教授做了一场长______。",options:["lecture","letter","level","light"],art:"🎤"},
+{ch:2,word:"explain",phon:"/ɪkˈspleɪn/",pos:"v.",meaning:"解释，说明",sentence:"Please ______ this word to me.",translation:"请给我______这个词。",options:["explain","expect","express","extra"],art:"💬"},
+{ch:2,word:"understand",phon:"/ˌʌndərˈstænd/",pos:"v.",meaning:"理解，明白",sentence:"Do you ______ the question?",translation:"你______这个问题吗？",options:["understand","under","unit","until"],art:"🤔"},
+{ch:2,word:"vocabulary",phon:"/voʊˈkæbjəleri/",pos:"n.",meaning:"词汇，词汇量",sentence:"Reading helps build your ______.",translation:"阅读能增加你的______。",options:["vocabulary","voice","visit","various"],art:"📖"},
+{ch:2,word:"fluent",phon:"/ˈfluːənt/",pos:"adj.",meaning:"流利的，流畅的",sentence:"She is ______ in three languages.",translation:"她三种语言都很______。",options:["fluent","fluid","few","full"],art:"🗣️"},
+{ch:3,word:"urban",phon:"/ˈɜːrbən/",pos:"adj.",meaning:"城市的，都市的",sentence:"______ life is fast and busy.",translation:"______生活又快又忙。",options:["urban","ugly","uncle","under"],art:"🏙️"},
+{ch:3,word:"traffic",phon:"/ˈtræfɪk/",pos:"n.",meaning:"交通，车流",sentence:"The ______ is heavy in the morning.",translation:"早上______很拥堵。",options:["traffic","train","travel","tree"],art:"🚗"},
+{ch:3,word:"crowd",phon:"/kraʊd/",pos:"n./v.",meaning:"人群；拥挤",sentence:"A large ______ gathered in the square.",translation:"一大______人聚集在广场。",options:["crowd","cross","cry","color"],art:"👥"},
+{ch:3,word:"economy",phon:"/ɪˈkɑːnəmi/",pos:"n.",meaning:"经济，节约",sentence:"The city's ______ is growing fast.",translation:"这座城市的______增长很快。",options:["economy","edge","edit","effect"],art:"📈"},
+{ch:3,word:"factory",phon:"/ˈfæktri/",pos:"n.",meaning:"工厂，制造厂",sentence:"The ______ produces cars.",translation:"这家______生产汽车。",options:["factory","fact","face","fall"],art:"🏭"},
+{ch:3,word:"market",phon:"/ˈmɑːrkɪt/",pos:"n.",meaning:"市场，集市",sentence:"We buy fresh food at the ______.",translation:"我们在______买新鲜食物。",options:["market","mark","marry","match"],art:"🛒"},
+{ch:3,word:"service",phon:"/ˈsɜːrvɪs/",pos:"n.",meaning:"服务，公共服务",sentence:"The hotel ______ is excellent.",translation:"这家酒店______很好。",options:["service","serve","seven","several"],art:"🛎️"},
+{ch:3,word:"culture",phon:"/ˈkʌltʃər/",pos:"n.",meaning:"文化，文明",sentence:"The city has a rich ______.",translation:"这座城市有丰富的______。",options:["culture","correct","cost","could"],art:"🎭"},
+{ch:3,word:"modern",phon:"/ˈmɑːdərn/",pos:"adj.",meaning:"现代的，新式的",sentence:"This is a very ______ building.",translation:"这是一座非常______的建筑。",options:["modern","model","moment","month"],art:"🏢"},
+{ch:3,word:"center",phon:"/ˈsentər/",pos:"n.",meaning:"中心，中央",sentence:"The station is in the ______ of town.",translation:"车站在镇______。",options:["center","century","certain","chair"],art:"🎯"},
+{ch:3,word:"government",phon:"/ˈɡʌvərnmənt/",pos:"n.",meaning:"政府，内阁",sentence:"The ______ built a new hospital.",translation:"______建了一座新医院。",options:["government","group","ground","guide"],art:"🏛️"},
+{ch:3,word:"citizen",phon:"/ˈsɪtɪzn/",pos:"n.",meaning:"公民，市民",sentence:"Every ______ should obey the law.",translation:"每个______都应守法。",options:["citizen","city","clear","climb"],art:"🧑‍⚖️"},
+{ch:3,word:"policy",phon:"/ˈpɑːləsi/",pos:"n.",meaning:"政策，方针",sentence:"The new ______ helps young people.",translation:"新______帮助年轻人。",options:["policy","polite","poor","popular"],art:"📜"},
+{ch:3,word:"public",phon:"/ˈpʌblɪk/",pos:"adj./n.",meaning:"公共的；公众",sentence:"This is a ______ library.",translation:"这是一座______图书馆。",options:["public","pull","push","put"],art:"🏛️"},
+{ch:3,word:"private",phon:"/ˈpraɪvət/",pos:"adj.",meaning:"私人的，私立的",sentence:"This is my ______ room.",translation:"这是我的______房间。",options:["private","problem","process","protect"],art:"🔒"},
+{ch:3,word:"energy",phon:"/ˈenərdʒi/",pos:"n.",meaning:"能量，精力",sentence:"Solar ______ is clean and cheap.",translation:"太阳______清洁又便宜。",options:["energy","engine","enough","enter"],art:"⚡"},
+{ch:3,word:"environment",phon:"/ɪnˈvaɪrənmənt/",pos:"n.",meaning:"环境，自然环境",sentence:"We must protect the ______.",translation:"我们必须保护______。",options:["environment","event","every","evidence"],art:"🌍"},
+{ch:3,word:"pollution",phon:"/pəˈluːʃn/",pos:"n.",meaning:"污染，污染物",sentence:"Air ______ is a big problem.",translation:"空气______是个大问题。",options:["pollution","population","position","positive"],art:"🏭"},
+{ch:3,word:"resource",phon:"/ˈriːsɔːrs/",pos:"n.",meaning:"资源，财力",sentence:"Water is a valuable ______.",translation:"水是一种宝贵的______。",options:["resource","return","review","road"],art:"💧"},
+{ch:3,word:"technology",phon:"/tekˈnɑːlədʒi/",pos:"n.",meaning:"技术，科技",sentence:"New ______ changes our life.",translation:"新______改变我们的生活。",options:["technology","teeth","tell","test"],art:"💻"},
+{ch:3,word:"digital",phon:"/ˈdɪdʒɪtl/",pos:"adj.",meaning:"数字的，数码的",sentence:"We live in a ______ age.",translation:"我们生活在______时代。",options:["digital","direct","dirty","dish"],art:"📱"},
+{ch:3,word:"device",phon:"/dɪˈvaɪs/",pos:"n.",meaning:"装置，设备",sentence:"This ______ can translate speech.",translation:"这个______能翻译语音。",options:["device","develop","devote","die"],art:"📲"},
+{ch:3,word:"network",phon:"/ˈnetwɜːrk/",pos:"n.",meaning:"网络，网状系统",sentence:"The phone ______ is very fast.",translation:"手机______非常快。",options:["network","never","next","nice"],art:"🕸️"},
+{ch:3,word:"signal",phon:"/ˈsɪɡnəl/",pos:"n.",meaning:"信号，暗号",sentence:"The radio ______ is weak here.",translation:"这里的广播______很弱。",options:["signal","simple","since","single"],art:"📶"},
+{ch:3,word:"social",phon:"/ˈsoʊʃl/",pos:"adj.",meaning:"社会的，社交的",sentence:"He has good ______ skills.",translation:"他有不错的______能力。",options:["social","soft","solid","some"],art:"🤝"},
+{ch:3,word:"community",phon:"/kəˈmjuːnəti/",pos:"n.",meaning:"社区，团体",sentence:"Our ______ is very friendly.",translation:"我们______非常友好。",options:["community","common","company","compare"],art:"🏘️"},
+{ch:3,word:"volunteer",phon:"/ˌvɑːlənˈtɪr/",pos:"n./v.",meaning:"志愿者；自愿",sentence:"She works as a ______ on weekends.",translation:"她周末做______。",options:["volunteer","voice","visit","various"],art:"🙋"},
+{ch:3,word:"charity",phon:"/ˈtʃærəti/",pos:"n.",meaning:"慈善，施舍",sentence:"They raised money for ______.",translation:"他们为______筹款。",options:["charity","chair","chance","change"],art:"❤️"},
+{ch:3,word:"donate",phon:"/ˈdoʊneɪt/",pos:"v.",meaning:"捐赠，捐献",sentence:"We ______ books to the school.",translation:"我们给学校______书。",options:["donate","during","door","double"],art:"🎁"},
+{ch:4,word:"career",phon:"/kəˈrɪr/",pos:"n.",meaning:"职业，生涯",sentence:"She wants a ______ in medicine.",translation:"她想从事医学______。",options:["career","carry","catch","cause"],art:"💼"},
+{ch:4,word:"company",phon:"/ˈkʌmpəni/",pos:"n.",meaning:"公司，陪伴",sentence:"He works for a big ______.",translation:"他在一家大______工作。",options:["company","common","compare","complete"],art:"🏢"},
+{ch:4,word:"colleague",phon:"/ˈkɑːliːɡ/",pos:"n.",meaning:"同事，同僚",sentence:"My ______ helped me a lot.",translation:"我的______帮了我很多。",options:["colleague","college","color","come"],art:"🧑‍💼"},
+{ch:4,word:"manager",phon:"/ˈmænɪdʒər/",pos:"n.",meaning:"经理，管理者",sentence:"The ______ called a meeting.",translation:"______召集了会议。",options:["manager","many","mark","market"],art:"👔"},
+{ch:4,word:"salary",phon:"/ˈsæləri/",pos:"n.",meaning:"薪水，工资",sentence:"Her ______ is paid monthly.",translation:"她的______按月发。",options:["salary","same","save","say"],art:"💰"},
+{ch:4,word:"interview",phon:"/ˈɪntərvjuː/",pos:"n./v.",meaning:"面试；采访",sentence:"She has a job ______ today.",translation:"她今天有工作______。",options:["interview","into","introduce","invent"],art:"🎤"},
+{ch:4,word:"resume",phon:"/ˈrezəmeɪ/",pos:"n.",meaning:"简历，履历",sentence:"Please send me your ______.",translation:"请把你的______发给我。",options:["resume","return","review","reveal"],art:"📄"},
+{ch:4,word:"promote",phon:"/prəˈmoʊt/",pos:"v.",meaning:"晋升；促销",sentence:"They ______d him to manager.",translation:"他们把他______为经理。",options:["promote","protect","prove","provide"],art:"⬆️"},
+{ch:4,word:"project",phon:"/ˈprɑːdʒekt/",pos:"n.",meaning:"项目，工程",sentence:"We are working on a new ______.",translation:"我们在做一个新______。",options:["project","protect","proud","pull"],art:"📊"},
+{ch:4,word:"deadline",phon:"/ˈdedlaɪn/",pos:"n.",meaning:"截止期限",sentence:"The ______ is next Friday.",translation:"______是下周五。",options:["deadline","deal","dear","deep"],art:"⏰"},
+{ch:4,word:"meeting",phon:"/ˈmiːtɪŋ/",pos:"n.",meaning:"会议，集会",sentence:"The ______ starts at 9 a.m.",translation:"______上午9点开始。",options:["meeting","meet","milk","million"],art:"📅"},
+{ch:4,word:"report",phon:"/rɪˈpɔːrt/",pos:"n./v.",meaning:"报告，汇报",sentence:"Please ______ to the manager.",translation:"请向经理______。",options:["report","return","review","reveal"],art:"📋"},
+{ch:4,word:"present",phon:"/prɪˈzent/",pos:"v.",meaning:"呈现；赠送",sentence:"She will ______ her plan.",translation:"她将______她的方案。",options:["present","president","press","price"],art:"🎁"},
+{ch:4,word:"negotiate",phon:"/nɪˈɡoʊʃieɪt/",pos:"v.",meaning:"谈判，协商",sentence:"We need to ______ the price.",translation:"我们需要______价格。",options:["negotiate","never","next","nice"],art:"🤝"},
+{ch:4,word:"contract",phon:"/ˈkɑːntrækt/",pos:"n.",meaning:"合同，契约",sentence:"Please read the ______ carefully.",translation:"请仔细读______。",options:["contract","control","correct","cost"],art:"📝"},
+{ch:4,word:"profit",phon:"/ˈprɑːfɪt/",pos:"n.",meaning:"利润，收益",sentence:"The company made a big ______.",translation:"公司获得了大笔______。",options:["profit","program","project","protect"],art:"📈"},
+{ch:4,word:"budget",phon:"/ˈbʌdʒɪt/",pos:"n.",meaning:"预算，经费",sentence:"We must keep within the ______.",translation:"我们必须控制在______内。",options:["budget","build","burn","busy"],art:"💵"},
+{ch:4,word:"finance",phon:"/ˈfaɪnæns/",pos:"n.",meaning:"财政，金融",sentence:"She studies ______ at college.",translation:"她在大学学______。",options:["finance","find","fine","finger"],art:"🏦"},
+{ch:4,word:"strategy",phon:"/ˈstrætədʒi/",pos:"n.",meaning:"策略，战略",sentence:"Our ______ worked very well.",translation:"我们的______很奏效。",options:["strategy","street","strong","study"],art:"♟️"},
+{ch:4,word:"goal",phon:"/ɡoʊl/",pos:"n.",meaning:"目标，球门",sentence:"My ______ is to learn English.",translation:"我的______是学英语。",options:["goal","good","group","grow"],art:"🎯"},
+{ch:4,word:"challenge",phon:"/ˈtʃælɪndʒ/",pos:"n./v.",meaning:"挑战；质疑",sentence:"This is a big ______ for me.",translation:"这对我是个大______。",options:["challenge","chair","chance","change"],art:"🧗"},
+{ch:4,word:"compete",phon:"/kəmˈpiːt/",pos:"v.",meaning:"竞争，比赛",sentence:"Many companies ______ for customers.",translation:"许多公司______客户。",options:["compete","complete","consider","cost"],art:"🏁"},
+{ch:4,word:"customer",phon:"/ˈkʌstəmər/",pos:"n.",meaning:"顾客，客户",sentence:"The ______ is always right.",translation:"______永远是对的。",options:["customer","custom","cut","cute"],art:"🛍️"},
+{ch:4,word:"product",phon:"/ˈprɑːdʌkt/",pos:"n.",meaning:"产品，产物",sentence:"This ______ sells very well.",translation:"这款______卖得很好。",options:["product","program","project","protect"],art:"📦"},
+{ch:4,word:"quality",phon:"/ˈkwɑːləti/",pos:"n.",meaning:"质量，品质",sentence:"We care about the ______ of goods.",translation:"我们在意商品的______。",options:["quality","quick","quiet","quite"],art:"⭐"},
+{ch:4,word:"brand",phon:"/brænd/",pos:"n.",meaning:"品牌，商标",sentence:"This ______ is very popular.",translation:"这个______很受欢迎。",options:["brand","bread","break","bright"],art:"🏷️"},
+{ch:4,word:"skill",phon:"/skɪl/",pos:"n.",meaning:"技能，技巧",sentence:"Communication is a useful ______.",translation:"沟通是一项有用的______。",options:["skill","skin","skirt","sleep"],art:"🛠️"},
+{ch:4,word:"training",phon:"/ˈtreɪnɪŋ/",pos:"n.",meaning:"训练，培训",sentence:"She is in ______ this week.",translation:"她这周在参加______。",options:["training","travel","treat","tree"],art:"🏋️"},
+{ch:4,word:"benefit",phon:"/ˈbenɪfɪt/",pos:"n./v.",meaning:"利益；受益",sentence:"Health ______ are important.",translation:"健康______很重要。",options:["benefit","better","between","beyond"],art:"🎁"},
+{ch:4,word:"balance",phon:"/ˈbæləns/",pos:"n./v.",meaning:"平衡；权衡",sentence:"Work and life should be in ______.",translation:"工作与生活应______。",options:["balance","ball","base","bath"],art:"⚖️"},
+{ch:5,word:"emotion",phon:"/ɪˈmoʊʃn/",pos:"n.",meaning:"情感，情绪",sentence:"She hid her ______ well.",translation:"她很好地隐藏了______。",options:["emotion","employ","empty","enjoy"],art:"❤️"},
+{ch:5,word:"mood",phon:"/muːd/",pos:"n.",meaning:"心情，情绪",sentence:"He is in a good ______ today.",translation:"他今天______不错。",options:["mood","moon","more","most"],art:"😊"},
+{ch:5,word:"confidence",phon:"/ˈkɑːnfɪdəns/",pos:"n.",meaning:"信心，信任",sentence:"She spoke with ______.",translation:"她说话充满______。",options:["confidence","confirm","consider","continue"],art:"💪"},
+{ch:5,word:"anxious",phon:"/ˈæŋkʃəs/",pos:"adj.",meaning:"焦虑的，担忧的",sentence:"She is ______ about the exam.",translation:"她对考试很______。",options:["anxious","ancient","angry","apart"],art:"😰"},
+{ch:5,word:"patient",phon:"/ˈpeɪʃnt/",pos:"adj./n.",meaning:"耐心的；病人",sentence:"Be ______, it takes time.",translation:"______点，这需要时间。",options:["patient","part","pass","past"],art:"⏳"},
+{ch:5,word:"honest",phon:"/ˈɑːnɪst/",pos:"adj.",meaning:"诚实的，正直的",sentence:"An ______ person tells the truth.",translation:"______的人说真话。",options:["honest","hope","host","hour"],art:"🤝"},
+{ch:5,word:"wise",phon:"/waɪz/",pos:"adj.",meaning:"明智的，聪明的",sentence:"That was a ______ decision.",translation:"那是______的决定。",options:["wise","wide","wife","will"],art:"🦉"},
+{ch:5,word:"value",phon:"/ˈvæljuː/",pos:"n./v.",meaning:"价值；重视",sentence:"Time has great ______.",translation:"时间有巨大的______。",options:["value","valley","various","very"],art:"💎"},
+{ch:5,word:"respect",phon:"/rɪˈspekt/",pos:"n./v.",meaning:"尊重，敬重",sentence:"We should ______ our teachers.",translation:"我们应______老师。",options:["respect","return","review","reveal"],art:"🙇"},
+{ch:5,word:"trust",phon:"/trʌst/",pos:"n./v.",meaning:"信任，信赖",sentence:"I ______ you completely.",translation:"我完全______你。",options:["trust","true","try","turn"],art:"🤝"},
+{ch:5,word:"memory",phon:"/ˈmeməri/",pos:"n.",meaning:"记忆，回忆",sentence:"I have a good ______ for faces.",translation:"我对面孔______很好。",options:["memory","many","mark","market"],art:"🧠"},
+{ch:5,word:"dream",phon:"/driːm/",pos:"n./v.",meaning:"梦；梦想",sentence:"She ______ of being a doctor.",translation:"她______成为医生。",options:["dream","dress","drink","drive"],art:"🌙"},
+{ch:5,word:"wish",phon:"/wɪʃ/",pos:"n./v.",meaning:"希望，愿望",sentence:"I ______ you good luck.",translation:"我______你好运。",options:["wish","with","word","work"],art:"✨"},
+{ch:5,word:"believe",phon:"/bɪˈliːv/",pos:"v.",meaning:"相信，认为",sentence:"I ______ in your ability.",translation:"我______你的能力。",options:["believe","below","beside","better"],art:"🙌"},
+{ch:5,word:"imagine",phon:"/ɪˈmædʒɪn/",pos:"v.",meaning:"想象，设想",sentence:"Can you ______ life on Mars?",translation:"你能______火星上的生活吗？",options:["imagine","improve","impress","include"],art:"🌈"},
+{ch:5,word:"create",phon:"/kriˈeɪt/",pos:"v.",meaning:"创造，创作",sentence:"Artists ______ beautiful things.",translation:"艺术家______美好的事物。",options:["create","creature","credit","culture"],art:"🎨"},
+{ch:5,word:"inspire",phon:"/ɪnˈspaɪər/",pos:"v.",meaning:"鼓舞，激励",sentence:"Her story ______d many people.",translation:"她的故事______了很多人。",options:["inspire","install","instead","instant"],art:"🔥"},
+{ch:5,word:"encourage",phon:"/ɪnˈkʌrɪdʒ/",pos:"v.",meaning:"鼓励，怂恿",sentence:"Teachers should ______ students.",translation:"老师应______学生。",options:["encourage","energy","engine","enough"],art:"👏"},
+{ch:5,word:"support",phon:"/səˈpɔːrt/",pos:"n./v.",meaning:"支持，支撑",sentence:"Thanks for your ______.",translation:"谢谢你的______。",options:["support","suppose","supply","sure"],art:"🤲"},
+{ch:5,word:"comfort",phon:"/ˈkʌmfərt/",pos:"n./v.",meaning:"安慰；舒适",sentence:"She gave him words of ______.",translation:"她给了他______的话。",options:["comfort","come","common","company"],art:"🛋️"},
+{ch:5,word:"peace",phon:"/piːs/",pos:"n.",meaning:"和平，平静",sentence:"We all want world ______.",translation:"我们都想要世界______。",options:["peace","pay","pen","people"],art:"🕊️"},
+{ch:5,word:"calm",phon:"/kɑːm/",pos:"adj./v.",meaning:"平静的；使平静",sentence:"Please ______ down and think.",translation:"请______下来想想。",options:["calm","call","come","cost"],art:"🧘"},
+{ch:5,word:"focus",phon:"/ˈfoʊkəs/",pos:"v./n.",meaning:"集中；焦点",sentence:"______ on your breathing.",translation:"______你的呼吸。",options:["focus","follow","force","forget"],art:"🧘‍♂️"},
+{ch:5,word:"habit",phon:"/ˈhæbɪt/",pos:"n.",meaning:"习惯，习性",sentence:"Reading is a good ______.",translation:"阅读是个好______。",options:["habit","hair","half","hand"],art:"🔄"},
+{ch:5,word:"attitude",phon:"/ˈætɪtuːd/",pos:"n.",meaning:"态度，看法",sentence:"She has a positive ______.",translation:"她______积极。",options:["attitude","attend","attention","attract"],art:"💭"},
+{ch:5,word:"behavior",phon:"/bɪˈheɪvjər/",pos:"n.",meaning:"行为，举止",sentence:"His ______ is excellent.",translation:"他的______很好。",options:["behavior","behind","believe","below"],art:"🧍"},
+{ch:5,word:"character",phon:"/ˈkærəktər/",pos:"n.",meaning:"性格，角色",sentence:"She has a strong ______.",translation:"她______很强。",options:["character","charge","chart","check"],art:"🎭"},
+{ch:5,word:"choose",phon:"/tʃuːz/",pos:"v.",meaning:"选择，挑选",sentence:"You must ______ wisely.",translation:"你必须明智地______。",options:["choose","chair","chance","change"],art:"✅"},
+{ch:5,word:"decide",phon:"/dɪˈsaɪd/",pos:"v.",meaning:"决定，下决心",sentence:"We must ______ now.",translation:"我们必须现在______。",options:["decide","develop","device","divide"],art:"🤔"},
+{ch:6,word:"nature",phon:"/ˈneɪtʃər/",pos:"n.",meaning:"自然，本性",sentence:"We should protect ______.",translation:"我们应保护______。",options:["nature","near","neck","need"],art:"🌿"},
+{ch:6,word:"planet",phon:"/ˈplænɪt/",pos:"n.",meaning:"行星，星球",sentence:"Earth is our home ______.",translation:"地球是我们的______。",options:["planet","plan","plant","plate"],art:"🪐"},
+{ch:6,word:"ocean",phon:"/ˈoʊʃn/",pos:"n.",meaning:"海洋，大海",sentence:"The ______ covers most of Earth.",translation:"______覆盖地球大部分。",options:["ocean","occur","of","off"],art:"🌊"},
+{ch:6,word:"river",phon:"/ˈrɪvər/",pos:"n.",meaning:"河流，江",sentence:"The ______ flows to the sea.",translation:"______流向大海。",options:["river","road","rock","roll"],art:"🏞️"},
+{ch:6,word:"mountain",phon:"/ˈmaʊntn/",pos:"n.",meaning:"山，山脉",sentence:"We climbed the high ______.",translation:"我们爬上了高______。",options:["mountain","mouse","mouth","move"],art:"⛰️"},
+{ch:6,word:"valley",phon:"/ˈvæli/",pos:"n.",meaning:"山谷，溪谷",sentence:"The ______ is green and quiet.",translation:"______青翠又安静。",options:["valley","value","various","very"],art:"🏔️"},
+{ch:6,word:"weather",phon:"/ˈweðər/",pos:"n.",meaning:"天气，气象",sentence:"The ______ is fine today.",translation:"今天______很好。",options:["weather","wear","week","well"],art:"🌤️"},
+{ch:6,word:"climate",phon:"/ˈklaɪmət/",pos:"n.",meaning:"气候，风气",sentence:"The ______ here is mild.",translation:"这里______温和。",options:["climate","climb","clock","close"],art:"🌦️"},
+{ch:6,word:"season",phon:"/ˈsiːzn/",pos:"n.",meaning:"季节，时期",sentence:"Autumn is my favorite ______.",translation:"秋天是我最喜欢的______。",options:["season","seat","second","see"],art:"🍂"},
+{ch:6,word:"animal",phon:"/ˈænɪml/",pos:"n.",meaning:"动物，牲畜",sentence:"This ______ lives in the forest.",translation:"这种______住在森林里。",options:["animal","another","answer","anti"],art:"🐾"},
+{ch:6,word:"plant",phon:"/plænt/",pos:"n./v.",meaning:"植物；种植",sentence:"We ______ flowers in spring.",translation:"我们在春天______花。",options:["plant","plan","play","please"],art:"🌱"},
+{ch:6,word:"tree",phon:"/triː/",pos:"n.",meaning:"树，树木",sentence:"The ______ gives us shade.",translation:"______给我们阴凉。",options:["tree","try","true","turn"],art:"🌳"},
+{ch:6,word:"flower",phon:"/ˈflaʊər/",pos:"n.",meaning:"花，花卉",sentence:"The ______ smells sweet.",translation:"这朵______很香。",options:["flower","flow","fly","follow"],art:"🌸"},
+{ch:6,word:"seed",phon:"/siːd/",pos:"n.",meaning:"种子，萌芽",sentence:"Plant the ______ in spring.",translation:"春天种下______。",options:["seed","see","seem","send"],art:"🌰"},
+{ch:6,word:"soil",phon:"/sɔɪl/",pos:"n.",meaning:"土壤，土地",sentence:"Good ______ helps plants grow.",translation:"好的______助植物生长。",options:["soil","some","song","soon"],art:"🟤"},
+{ch:6,word:"water",phon:"/ˈwɔːtər/",pos:"n./v.",meaning:"水；浇水",sentence:"We must ______ the flowers.",translation:"我们必须给花______。",options:["water","what","when","where"],art:"💧"},
+{ch:6,word:"sunlight",phon:"/ˈsʌnlaɪt/",pos:"n.",meaning:"阳光，日光",sentence:"Plants need ______ to grow.",translation:"植物需要______生长。",options:["sunlight","sun","super","sure"],art:"☀️"},
+{ch:6,word:"oxygen",phon:"/ˈɑːksɪdʒən/",pos:"n.",meaning:"氧气",sentence:"We breathe in ______.",translation:"我们吸入______。",options:["oxygen","own","page","pain"],art:"🫁"},
+{ch:6,word:"carbon",phon:"/ˈkɑːrbən/",pos:"n.",meaning:"碳",sentence:"______ dioxide warms the Earth.",translation:"______ dioxide 使地球变暖。",options:["carbon","card","care","carry"],art:"🧪"},
+{ch:6,word:"species",phon:"/ˈspiːʃiːz/",pos:"n.",meaning:"物种，种类",sentence:"Many ______ are in danger.",translation:"许多______处于危险中。",options:["species","speed","spell","spend"],art:"🐢"},
+{ch:6,word:"protect",phon:"/prəˈtekt/",pos:"v.",meaning:"保护，防卫",sentence:"We must ______ wild animals.",translation:"我们必须______野生动物。",options:["protect","prove","provide","public"],art:"🛡️"},
+{ch:6,word:"conserve",phon:"/kənˈsɜːrv/",pos:"v.",meaning:"保护，节约",sentence:"We should ______ water.",translation:"我们应______水。",options:["conserve","consider","correct","cost"],art:"💧"},
+{ch:6,word:"recycle",phon:"/riːˈsaɪkl/",pos:"v.",meaning:"回收，再利用",sentence:"We ______ paper and plastic.",translation:"我们______纸和塑料。",options:["recycle","return","review","reveal"],art:"♻️"},
+{ch:6,word:"waste",phon:"/weɪst/",pos:"n./v.",meaning:"浪费；废物",sentence:"Don't ______ water.",translation:"不要______水。",options:["waste","watch","water","wave"],art:"🗑️"},
+{ch:6,word:"energy",phon:"/ˈenərdʒi/",pos:"n.",meaning:"能量，精力",sentence:"Solar ______ is clean.",translation:"太阳______很清洁。",options:["energy","engine","enough","enter"],art:"⚡"},
+{ch:6,word:"wildlife",phon:"/ˈwaɪldlaɪf/",pos:"n.",meaning:"野生动植物",sentence:"The park protects ______.",translation:"公园保护______。",options:["wildlife","will","win","wind"],art:"🦋"},
+{ch:6,word:"forest",phon:"/ˈfɒrɪst/",pos:"n.",meaning:"森林",sentence:"The ______ is home to many animals.",translation:"______是许多动物的家。",options:["forest","field","floor","fort"],art:"🌲"},
+{ch:6,word:"desert",phon:"/ˈdezərt/",pos:"n.",meaning:"沙漠，荒原",sentence:"The ______ is hot and dry.",translation:"______炎热干燥。",options:["desert","design","desk","develop"],art:"🏜️"},
+{ch:6,word:"volcano",phon:"/vɑːlˈkeɪnoʊ/",pos:"n.",meaning:"火山",sentence:"The ______ erupted last year.",translation:"______去年喷发了。",options:["volcano","voice","visit","various"],art:"🌋"},
+{ch:6,word:"earthquake",phon:"/ˈɜːrθkweɪk/",pos:"n.",meaning:"地震",sentence:"An ______ hit the city.",translation:"一场______袭击了城市。",options:["earthquake","east","easy","eat"],art:"🫜"},
+{ch:7,word:"world",phon:"/wɜːrld/",pos:"n.",meaning:"世界，地球",sentence:"He wants to travel the ______.",translation:"他想环游______。",options:["world","word","work","worry"],art:"🌍"},
+{ch:7,word:"country",phon:"/ˈkʌntri/",pos:"n.",meaning:"国家，乡村",sentence:"China is a large ______.",translation:"中国是一个大______。",options:["country","count","couple","course"],art:"🏳️"},
+{ch:7,word:"nation",phon:"/ˈneɪʃn/",pos:"n.",meaning:"国家，民族",sentence:"The whole ______ celebrated.",translation:"整个______都在庆祝。",options:["nation","nature","near","neck"],art:"🎆"},
+{ch:7,word:"capital",phon:"/ˈkæpɪtl/",pos:"n.",meaning:"首都，资本",sentence:"Beijing is the ______ of China.",translation:"北京是中国的______。",options:["capital","captain","car","care"],art:"🏛️"},
+{ch:7,word:"history",phon:"/ˈhɪstri/",pos:"n.",meaning:"历史，历史课",sentence:"We study ______ at school.",translation:"我们在学校学______。",options:["history","hit","hold","home"],art:"📜"},
+{ch:7,word:"tradition",phon:"/trəˈdɪʃn/",pos:"n.",meaning:"传统，惯例",sentence:"It is a family ______.",translation:"这是家庭______。",options:["tradition","train","travel","tree"],art:"🏮"},
+{ch:7,word:"festival",phon:"/ˈfestɪvl/",pos:"n.",meaning:"节日，喜庆",sentence:"The Spring ______ is coming.",translation:"春节______要到了。",options:["festival","few","fill","find"],art:"🎉"},
+{ch:7,word:"custom",phon:"/ˈkʌstəm/",pos:"n.",meaning:"习俗，习惯",sentence:"This is an old ______.",translation:"这是个古老的______。",options:["custom","customer","cut","cute"],art:"🎎"},
+{ch:7,word:"language",phon:"/ˈlæŋɡwɪdʒ/",pos:"n.",meaning:"语言，措辞",sentence:"English is a useful ______.",translation:"英语是有用的______。",options:["language","large","last","late"],art:"🗣️"},
+{ch:7,word:"translate",phon:"/trænsˈleɪt/",pos:"v.",meaning:"翻译，转化",sentence:"Can you ______ this sentence?",translation:"你能______这个句子吗？",options:["translate","transport","treat","trip"],art:"🔤"},
+{ch:7,word:"travel",phon:"/ˈtrævl/",pos:"v./n.",meaning:"旅行，游历",sentence:"We love to ______ abroad.",translation:"我们喜欢出国______。",options:["travel","treat","tree","trip"],art:"✈️"},
+{ch:7,word:"journey",phon:"/ˈdʒɜːrni/",pos:"n.",meaning:"旅程，行程",sentence:"The ______ took three days.",translation:"______花了三天。",options:["journey","join","joy","judge"],art:"🎒"},
+{ch:7,word:"passport",phon:"/ˈpæspɔːrt/",pos:"n.",meaning:"护照",sentence:"Don't forget your ______.",translation:"别忘了带______。",options:["passport","pass","past","pay"],art:"📕"},
+{ch:7,word:"abroad",phon:"/əˈbrɔːd/",pos:"adv.",meaning:"在国外，到海外",sentence:"She studies ______.",translation:"她在______留学。",options:["abroad","about","above","across"],art:"🌏"},
+{ch:7,word:"foreign",phon:"/ˈfɔːrən/",pos:"adj.",meaning:"外国的，外交的",sentence:"He speaks a ______ language.",translation:"他说一门______语言。",options:["foreign","forget","for","free"],art:"🗺️"},
+{ch:7,word:"local",phon:"/ˈloʊkl/",pos:"adj./n.",meaning:"当地的；本地人",sentence:"Eat at a ______ restaurant.",translation:"在______餐馆吃饭。",options:["local","long","look","loss"],art:"🏘️"},
+{ch:7,word:"global",phon:"/ˈɡloʊbl/",pos:"adj.",meaning:"全球的，全面的",sentence:"This is a ______ problem.",translation:"这是个______问题。",options:["global","glad","glass","gold"],art:"🌐"},
+{ch:7,word:"trade",phon:"/treɪd/",pos:"n./v.",meaning:"贸易，交易",sentence:"Countries ______ with each other.",translation:"各国相互______。",options:["trade","train","travel","tree"],art:"📦"},
+{ch:7,word:"export",phon:"/ɪkˈspɔːrt/",pos:"v./n.",meaning:"出口，输出",sentence:"We ______ cars to many countries.",translation:"我们向多国______汽车。",options:["export","express","extra","eye"],art:"🚢"},
+{ch:7,word:"import",phon:"/ˈɪmpɔːrt/",pos:"v./n.",meaning:"进口，输入",sentence:"We ______ oil from abroad.",translation:"我们从国外______石油。",options:["import","important","impress","improve"],art:"📥"},
+{ch:7,word:"economy",phon:"/ɪˈkɑːnəmi/",pos:"n.",meaning:"经济，节约",sentence:"Tourism helps the ______.",translation:"旅游业助力______。",options:["economy","edge","edit","effect"],art:"📈"},
+{ch:7,word:"international",phon:"/ˌɪntərˈnæʃnəl/",pos:"adj.",meaning:"国际的",sentence:"This is an ______ airport.",translation:"这是个______机场。",options:["international","interest","into","introduce"],art:"✈️"},
+{ch:7,word:"conference",phon:"/ˈkɑːnfərəns/",pos:"n.",meaning:"会议，讨论会",sentence:"The ______ starts tomorrow.",translation:"______明天开始。",options:["conference","consider","cost","continue"],art:"🎤"},
+{ch:7,word:"ambassador",phon:"/æmˈbæsədər/",pos:"n.",meaning:"大使，代表",sentence:"The ______ spoke at the meeting.",translation:"______在会上发言。",options:["ambassador","among","and","another"],art:"🕴️"},
+{ch:7,word:"culture",phon:"/ˈkʌltʃər/",pos:"n.",meaning:"文化，文明",sentence:"We learn about other ______.",translation:"我们了解其他______。",options:["culture","correct","cost","could"],art:"🎭"},
+{ch:7,word:"art",phon:"/ɑːrt/",pos:"n.",meaning:"艺术，美术",sentence:"She studies ______ in Paris.",translation:"她在巴黎学______。",options:["art","are","ask","at"],art:"🎨"},
+{ch:7,word:"music",phon:"/ˈmjuːzɪk/",pos:"n.",meaning:"音乐，乐曲",sentence:"I love listening to ______.",translation:"我喜欢听______。",options:["music","must","my","name"],art:"🎵"},
+{ch:7,word:"museum",phon:"/mjuːˈziːəm/",pos:"n.",meaning:"博物馆",sentence:"The ______ has many old things.",translation:"______里有很多古物。",options:["museum","music","must","my"],art:"🏛️"},
+{ch:7,word:"theater",phon:"/ˈθiːətər/",pos:"n.",meaning:"剧院，剧场",sentence:"We saw a play at the ______.",translation:"我们在______看了一出戏。",options:["theater","their","then","there"],art:"🎭"},
+{ch:7,word:"sport",phon:"/spɔːrt/",pos:"n.",meaning:"运动，竞技",sentence:"______ keeps us healthy.",translation:"______让我们健康。",options:["sport","spell","spend","speed"],art:"⚽"}
+];
+
+var CHAPTERS=["第1章：迷雾森林","第2章：知识殿堂","第3章：城市脉搏","第4章：职场征途","第5章：心灵之境","第6章：自然物语","第7章：世界之窗"];
+
+var STORY_A=["勇者踏入迷雾森林，前方道路未知...","勇者拨开藤蔓，发现一条隐藏的小路","小鹿蜷缩在陷阱里，身体发抖","穿过密林，一道大门挡住了去路","古老符文浮现，森林的秘密正在揭开","迷雾散去，前方的路渐渐清晰","新的章节，新的单词等待探索"];
+var STORY_B=["森林深处，古老符文闪烁...","拼写魔法需要补全每一个字母","月光下，单词显现出真实形态","最终咒语即将完成","符文之力指引着前行的方向","字母汇聚成词，魔法逐渐苏醒","新的篇章，新的魔法等待掌握"];
+var STORY_C=["森林精灵出现，考验你的理解...","每个单词都有它的真意","释义如迷雾，需用心辨别","智慧之光闪耀","精灵的谜题越来越深奥","真意浮现，迷雾终将散去","新的智慧，等待你来解锁"];
+
+var LESSONS_PER_CHAPTER=3, WORDS_PER_LESSON=10;
+
+var state={
+  hp:3, coins:0,
+  currentLevel:1, currentModule:"A", currentChapter:1,
+  quizWords:[], currentQ:0, score:0, reviewList:[],
+  cleared:{}, lessonProgress:1, mastery:{}, wordStatus:{},
+  _lastModule:"A"
+};
+
+function loadState(){try{var s=JSON.parse(localStorage.getItem("spellbound_v6"));if(s){
+  state.hp=s.hp??3; state.coins=s.coins??0;
+  state.cleared=s.cleared||{};
+  state.lessonProgress=Math.max(s.lessonProgress||1,1);
+  state.mastery=s.mastery||{}; state.reviewList=s.reviewList||[]; state.wordStatus=s.wordStatus||{};
+  state._lastModule=s._lastModule||"A"; state.currentChapter=s.currentChapter||1;
+}}catch(e){}}
+function saveState(){localStorage.setItem("spellbound_v6",JSON.stringify(state))}
+
+function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},1600)}
+
+function switchPage(p){
+  document.querySelectorAll(".page").forEach(function(x){x.classList.remove("active")});
+  document.getElementById(p).classList.add("active");
+  document.getElementById("top-title").textContent=({"map":"🗺️ 地图","story":"📜 剧情","quiz":"⚔️ 挑战","result":"🏆 结果","words":"📖 单词","me":"👤 我的"})[p];
+  document.querySelectorAll(".nav div").forEach(function(x){x.classList.remove("active")});
+  var nav=({"map":"nav-map","words":"nav-words","me":"nav-me"})[p];
+  if(nav)document.getElementById(nav).classList.add("active");
+  if(p==="map")renderMap();
+  if(p==="words")renderWordList("all");
+  if(p==="me")renderMe();
+}
+
+function globalLesson(ch,lv){return (ch-1)*LESSONS_PER_CHAPTER+lv}
+function chapterOfLesson(gl){return Math.floor((gl-1)/LESSONS_PER_CHAPTER)+1}
+function lessonInChapterOf(gl){return ((gl-1)%LESSONS_PER_CHAPTER)+1}
+function getLessonWords(gl){var start=(gl-1)*WORDS_PER_LESSON;return WORDS.slice(start,start+WORDS_PER_LESSON)}
+
+function renderMap(){
+  var totalCh=Math.ceil(WORDS.length/(LESSONS_PER_CHAPTER*WORDS_PER_LESSON));
+  document.getElementById("total-chapters").textContent=totalCh;
+  document.getElementById("unlock-info").textContent=state.lessonProgress;
+  document.getElementById("hp").textContent=state.hp;
+  document.getElementById("coins").textContent=state.coins;
+  document.getElementById("map-chapter-title").textContent="📖 "+CHAPTERS[state.currentChapter-1];
+
+  var cnav=document.getElementById("chapter-nav"); cnav.innerHTML="";
+  for(var c=1;c<=totalCh;c++){
+    var cc=document.createElement("div"); cc.className="cnav"+(c===state.currentChapter?" active":"");
+    cc.textContent=CHAPTERS[c-1].split("：")[0];
+    (function(ch){cc.onclick=function(){state.currentChapter=ch;renderMap();saveState()}})(c);
+    cnav.appendChild(cc);
+  }
+
+  var m=document.getElementById("map-modules"); m.innerHTML="";
+  var totalLessons=totalCh*LESSONS_PER_CHAPTER;
+  var mods=[{id:"A",n:"📝 选词填空"},{id:"B",n:"✏️ 拼写补全"},{id:"C",n:"🧠 释义匹配"}];
+
+  mods.forEach(function(mod){
+    var block=document.createElement("div"); block.style.margin="10px 0";
+    var clearedCount=0;
+    for(var i=1;i<=totalLessons;i++){if(state.cleared[mod.id+"_"+i])clearedCount++}
+    block.innerHTML='<div style="font-weight:bold;margin-bottom:4px;color:var(--purple)">'+mod.n+' <span style="font-size:12px;color:#888">（已通关 '+clearedCount+'/'+totalLessons+' 课）</span></div>';
+    for(var i=1;i<=LESSONS_PER_CHAPTER;i++){
+      var gl=globalLesson(state.currentChapter,i);
+      var lvl=document.createElement("div");
+      var stars=state.cleared[mod.id+"_"+gl]||0;
+      var starStr="★".repeat(stars)+"☆".repeat(3-stars);
+      var locked=gl>state.lessonProgress;
+      lvl.className="lvl-btn"+(stars>0?" cleared":"")+(locked?" locked":"");
+      lvl.innerHTML='第'+state.currentChapter+'章 · 第'+i+'课时 '+(locked?'🔒 ':'')+'<span style="float:right">'+starStr+'</span>';
+      (function(mid,gln,lock){
+        lvl.onclick=function(){
+          if(lock){toast("先通关全局第 "+gln+" 课时来解锁");return}
+          state.currentModule=mid; state.currentLevel=gln; state._lastModule=mid; saveState(); showStory();
+        };
+      })(mod.id,gl,locked);
+      block.appendChild(lvl);
+    }
+    m.appendChild(block);
+  });
+}
+
+function showStory(){
+  var s=state.currentModule==="A"?STORY_A:(state.currentModule==="B"?STORY_B:STORY_C);
+  var ch=chapterOfLesson(state.currentLevel), ln=lessonInChapterOf(state.currentLevel);
+  document.getElementById("story-title").textContent="第"+ch+"章 · 第"+ln+"课时 · "+(state.currentModule==="A"?"选词填空":state.currentModule==="B"?"拼写补全":"释义匹配");
+  document.getElementById("story-text").innerHTML=(s[Math.min(state.currentLevel,7)]||"冒险继续...")+"<br><i>"+CHAPTERS[ch-1]+"</i>";
+  switchPage("story");
+}
+
+function startQuiz(){
+  state.hp=3; state.score=0; state.currentQ=0; state.reviewList=[];
+  var lessonWords=getLessonWords(state.currentLevel);
+  var unmastered=lessonWords.filter(function(w){return !state.mastery[w.word]});
+  state.quizWords=(unmastered.length>0?unmastered:lessonWords).slice(0,WORDS_PER_LESSON);
+  switchPage("quiz"); renderQuiz();
+}
+
+function renderQuiz(){
+  if(state.currentQ>=state.quizWords.length){showResult();return}
+  var q=state.quizWords[state.currentQ];
+  var modTxt=state.currentModule==="A"?"选词填空":state.currentModule==="B"?"拼写补全":"释义匹配";
+  var ch=chapterOfLesson(state.currentLevel), ln=lessonInChapterOf(state.currentLevel);
+  document.getElementById("quiz-header").innerHTML="第"+ch+"章 · 第"+ln+"课时 · "+modTxt+" ("+(state.currentQ+1)+"/"+state.quizWords.length+") <span style='float:right'>♥"+state.hp+"</span>";
+  var c=document.getElementById("quiz-area"); c.innerHTML="";
+  if(state.currentModule==="A")renderA(q,c);
+  else if(state.currentModule==="B")renderB(q,c);
+  else renderC(q,c);
+}
+
+function renderA(q,c){
+  var sent=q.sentence.replace("______",'<span class="blank">?</span>');
+  c.innerHTML='<div style="text-align:center;margin-bottom:10px;font-size:14px">'+q.art+' <i>'+CHAPTERS[(q.ch||1)-1]+'</i></div>'
+    +'<div class="sentence-blank">'+sent+'</div>'
+    +'<div style="font-size:13px;color:#888;margin-bottom:8px">'+q.translation+'</div>'
+    +'<button onclick="speak(\''+q.word+'\')" style="padding:6px 12px;background:var(--purple);color:#fff;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px">🔊 听发音</button>'
+    +'<div class="options" id="opts"></div>';
+  var opts=[q.word];
+  while(opts.length<4){var r=WORDS[Math.floor(Math.random()*WORDS.length)].word; if(opts.indexOf(r)===-1)opts.push(r)}
+  opts.sort(function(){return Math.random()-0.5});
+  var oc=document.getElementById("opts");
+  opts.forEach(function(o){
+    var d=document.createElement("div"); d.className="opt"; d.textContent=o;
+    d.onclick=function(){
+      if(this.classList.contains("correct"))return;
+      if(o===q.word){
+        this.classList.add("correct");
+        state.score++; state.coins+=10; state.mastery[q.word]=true; state.wordStatus[q.word]="mastered";
+        var ri=state.reviewList.indexOf(q.word); if(ri>-1)state.reviewList.splice(ri,1);
+        saveState(); setTimeout(function(){state.currentQ++;renderQuiz()},700);
+      }else{
+        this.classList.add("wrong");
+        state.hp--; if(state.reviewList.indexOf(q.word)===-1)state.reviewList.push(q.word); state.wordStatus[q.word]="review";
+        saveState(); if(state.hp<=0)setTimeout(showResult,800);
+      }
+    };
+    oc.appendChild(d);
+  });
+}
+
+function renderB(q,c){
+  var prefix=q.word.substring(0,Math.ceil(q.word.length/2));
+  var remaining=q.word.substring(prefix.length).split("");
+  var letters=remaining.slice();
+  var extra=["a","e","i","o","u","s","t","n","r","p","l","k","d","m","b","x","y","z","c","g"];
+  while(letters.length<Math.max(remaining.length+2,4)){var r=extra[Math.floor(Math.random()*extra.length)]; if(letters.indexOf(r)===-1)letters.push(r)}
+  letters.sort(function(){return Math.random()-0.5});
+  var html='<div style="text-align:center">补全拼写：</div><div style="text-align:center;margin:10px 0"><span class="spell-prefix">'+prefix+'</span>';
+  for(var i=0;i<remaining.length;i++)html+='<span class="spell-box" id="sb'+i+'"></span>';
+  html+='</div><div style="text-align:center;color:#888;font-size:13px">'+q.meaning+' '+q.art+'</div><div class="letter-pool" style="text-align:center;margin-top:8px" id="lp">';
+  letters.forEach(function(l){html+='<span class="letter-btn" data-l="'+l+'">'+l+'</span>'});
+  html+='</div><button onclick="speak(\''+q.word+'\')" style="margin-top:8px;padding:6px 12px;background:var(--purple);color:#fff;border:none;border-radius:8px;cursor:pointer">🔊 听发音</button>';
+  c.innerHTML=html;
+  var filled=0, corrLen=remaining.length;
+  c.querySelectorAll(".letter-btn").forEach(function(btn){
+    btn.onclick=function(){
+      if(this.classList.contains("used"))return;
+      var sb=document.getElementById("sb"+filled); if(!sb)return;
+      var l=this.dataset.l; sb.textContent=l; this.classList.add("used");
+      if(l===remaining[filled]){
+        sb.classList.add("filled"); filled++;
+        if(filled===corrLen){
+          state.score++; state.coins+=10; state.mastery[q.word]=true; state.wordStatus[q.word]="mastered";
+          var ri=state.reviewList.indexOf(q.word); if(ri>-1)state.reviewList.splice(ri,1);
+          saveState(); setTimeout(function(){state.currentQ++;renderQuiz()},800);
+        }
+      }else{
+        sb.classList.add("wrong"); state.hp--;
+        if(state.reviewList.indexOf(q.word)===-1)state.reviewList.push(q.word); state.wordStatus[q.word]="review";
+        saveState(); if(state.hp<=0)setTimeout(showResult,800);
+      }
+    };
+  });
+}
+
+function renderC(q,c){
+  c.innerHTML='<div style="text-align:center;font-size:22px;font-weight:bold;color:var(--purple)">'+q.word+'</div>'
+    +'<div style="text-align:center;color:#888">'+q.phon+' '+q.pos+'</div>'
+    +'<button onclick="speak(\''+q.word+'\')" style="display:block;margin:8px auto;padding:6px 12px;background:var(--purple);color:#fff;border:none;border-radius:8px;cursor:pointer">🔊 发音</button>'
+    +'<div style="margin:10px 0;text-align:center">选择正确释义：</div><div class="options" id="opts"></div>';
+  var opts=[q.meaning];
+  var others=WORDS.filter(function(w){return w.meaning!==q.meaning}).map(function(w){return w.meaning});
+  while(opts.length<4){var r=others[Math.floor(Math.random()*others.length)]; if(opts.indexOf(r)===-1)opts.push(r)}
+  opts.sort(function(){return Math.random()-0.5});
+  var oc=document.getElementById("opts");
+  opts.forEach(function(o){
+    var d=document.createElement("div"); d.className="opt"; d.textContent=o;
+    d.onclick=function(){
+      if(o===q.meaning){
+        this.classList.add("correct");
+        state.score++; state.coins+=10; state.mastery[q.word]=true; state.wordStatus[q.word]="mastered";
+        var ri=state.reviewList.indexOf(q.word); if(ri>-1)state.reviewList.splice(ri,1);
+        saveState(); setTimeout(function(){state.currentQ++;renderQuiz()},700);
+      }else{
+        this.classList.add("wrong");
+        state.hp--; if(state.reviewList.indexOf(q.word)===-1)state.reviewList.push(q.word); state.wordStatus[q.word]="review";
+        saveState(); if(state.hp<=0)setTimeout(showResult,800);
+      }
+    };
+    oc.appendChild(d);
+  });
+}
+
+function showResult(){
+  var stars=state.score===10?3:(state.score>=7?2:(state.score>=5?1:0));
+  var key=state.currentModule+"_"+state.currentLevel;
+  var old=state.cleared[key]||0; state.cleared[key]=Math.max(old,stars);
+  if(stars>0){
+    var newP=Math.max(state.lessonProgress,state.currentLevel+1);
+    if(newP>state.lessonProgress){state.lessonProgress=newP; toast("🎉 所有板块已解锁第 "+newP+" 课时！")}
+  }
+  saveState();
+  document.getElementById("result-stars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
+  document.getElementById("result-title").textContent=stars>0?"课时通关！":"再试一次";
+  document.getElementById("result-desc").textContent="得分："+state.score+"/10 · 金币：🪙"+state.coins+" · 剩余♥"+state.hp;
+  switchPage("result");
+}
+function backToMap(){switchPage("map")}
+function retryLevel(){startQuiz()}
+
+function showDetail(q){
+  document.getElementById("modal-word").textContent=q.word;
+  document.getElementById("modal-phon").textContent=q.phon;
+  document.getElementById("modal-pos").textContent=q.pos;
+  document.getElementById("modal-meaning").textContent=q.meaning;
+  document.getElementById("modal-art").textContent=q.art;
+  document.getElementById("modal-example").textContent=q.sentence.replace("______","【"+q.word+"】");
+  document.getElementById("word-modal").classList.add("active");
+  window._curWord=q.word;
+}
+function closeModal(){document.getElementById("word-modal").classList.remove("active")}
+function playModalWord(){if(window._curWord)speak(window._curWord)}
+function speak(t){if('speechSynthesis' in window){var u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=0.8;speechSynthesis.speak(u)}}
+
+function renderWordList(f){
+  var list=document.getElementById("word-list"); list.innerHTML="";
+  WORDS.forEach(function(w){
+    var s=state.mastery[w.word]?"mastered":(state.reviewList.indexOf(w.word)>-1?"review":"learning");
+    if(f!=="all"&&f!==s)return;
+    var d=document.createElement("div"); d.style="padding:10px;border-bottom:1px dashed #ccc;display:flex;justify-content:space-between;align-items:center";
+    d.innerHTML='<div><b>'+w.word+'</b> <span style="color:#888;font-size:12px">'+w.phon+'</span><br><span style="font-size:13px;color:#555">'+w.meaning+'</span></div><span style="font-size:18px">'+w.art+'</span>';
+    list.appendChild(d);
+  });
+}
+function filterWords(f,btn){
+  btn.parentNode.querySelectorAll(".opt").forEach(function(b){b.classList.remove("active")});
+  btn.classList.add("active"); renderWordList(f);
+}
+function renderMe(){
+  var m=0; for(var k in state.mastery)if(state.mastery[k])m++;
+  document.getElementById("me-mastered").textContent=m;
+  document.getElementById("me-total").textContent=WORDS.length;
+  document.getElementById("me-coins").textContent=state.coins;
+  document.getElementById("me-lesson").textContent=state.lessonProgress;
+  var rl=document.getElementById("review-list");
+  if(state.reviewList.length===0)rl.innerHTML='<p style="color:#888;font-size:13px">暂无需复习单词 🎉</p>';
+  else rl.innerHTML=state.reviewList.map(function(w){return'<span style="display:inline-block;background:#f8d7da;padding:4px 10px;border-radius:8px;margin:3px;font-size:13px">'+w+'</span>'}).join("");
+}
+
+var audioCtx=null,bgmTimer=null,musicOn=false;
+document.getElementById("musicBtn").onclick=function(){
+  if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended")audioCtx.resume();
+  if(musicOn){clearInterval(bgmTimer);this.textContent="🎵";this.classList.remove("playing");musicOn=false}
+  else{this.textContent="🎶";this.classList.add("playing");musicOn=true;playNote(523,.3);bgmTimer=setInterval(function(){playNote([523,659,784,659,587][Math.floor(Math.random()*5)],.4)},750)}
+};
+function playNote(freq,dur){if(!audioCtx)return;try{var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq;g.gain.value=.02;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur)}catch(e){}}
+
+document.addEventListener("DOMContentLoaded",function(){loadState();renderMap()});
+</script>
+</body>
+</html>
